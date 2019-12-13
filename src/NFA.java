@@ -31,20 +31,44 @@ public class NFA {
     private void construct(String tokenName, String re){
         NFANode temp=startState;
         LinkedList list=new LinkedList<Character>();
+        int level=0;//indicate in which ()
         for(int i=0;i<re.length();i++){
             Character c=re.charAt(i);
-            if(isValid(c)){
+            if(terminalSymbol.contains(c)){
                 list.add(c);
             }else{
                 //if */+, pop all elements and add NFANode except the *ed one
-                //if(, pop all elements and add NFANode, then do according to the content of ()     iterate
-                //if), do according to following of )                                               iterate
+                //if(, pop all elements and add NFANode, then do according to the content of ()
+                //if), do according to following of )
                 //if |, pop all elements and add NFANode, if | is not in (), add tokenName to NFANode
+                if(c.equals('(')){
+                    //add nodes
+                    while(!list.isEmpty()){
+                        Character added=(Character)list.removeFirst();
+                        if(temp.getNextState(added)==null){
+                            temp.addNextState(added,new NFANode());
+                        }
+                        temp=temp.getNextState(added);
+                    }
+                    //add according to the character after the same level )
+                    //find the location of corresponding )
+                    int l=level+1;
+                    for(int j=i+1;j<re.length();j++){
+                        if(re.charAt(j)=='('){
+                            l++;
+                        }else if(re.charAt(j)==')'){
+                            l--;
+                            if(l==level){
+                                //if re[j+1] is */+ add ¦Å node to last
+                            }
+                        }
+                    }
+                }
             }
         }
     }
     //if the character is terminal symbol
-    private static boolean isValid(Character c){
+    public static boolean isValid(Character c){
         int i=(int) c;
         //System.out.print(i+" ");
         if(i<=(int)'9'&&i>=(int)'0'){
@@ -127,6 +151,9 @@ class NFANode{
         nextStates.put(c,nfaNode);
     }
     public HashMap getNextStates(){return nextStates;}
+    public NFANode getNextState(char pathCh){
+        return nextStates.get(pathCh);
+    }
     public String toString(){
         return nextStates.toString();
     }
@@ -135,6 +162,6 @@ class NFANode{
         NFANode n=new NFANode();
         n.addNextState('a',new NFANode());
         System.out.println(n.getNextStates());
-        System.out.println(n.getNextStates().get('a')+" "+n.getNextStates().get('b'));
+        System.out.println(n.getNextState('a')+" "+n.getNextState('b'));
     }
 }
