@@ -7,7 +7,7 @@ public class NFA {
         startState=new NFANode();
         terminalSymbol=new HashSet<Character>();
     }
-    //add new token and construct NFA
+    //add new token and construct NFA                      ¦Å
     public void addToken(Token token){
         String tokenName=token.getTokenName();
         String re=token.getRE();
@@ -29,40 +29,72 @@ public class NFA {
     }
     //construct NFA
     private void construct(String tokenName, String re){
-        NFANode temp=startState;
+        NFANode start=startState;
         LinkedList list=new LinkedList<Character>();
-        int level=0;//indicate in which ()
+        boolean or=false;
         for(int i=0;i<re.length();i++){
             Character c=re.charAt(i);
             if(terminalSymbol.contains(c)){
                 list.add(c);
             }else{
-                //if */+, pop all elements and add NFANode except the *ed one
-                //if(, pop all elements and add NFANode, then do according to the content of ()
-                //if), do according to following of )
-                //if |, pop all elements and add NFANode, if | is not in (), add tokenName to NFANode
-                if(c.equals('(')){
-                    //add nodes
+                if(c=='('){
                     while(!list.isEmpty()){
-                        Character added=(Character)list.removeFirst();
-                        if(temp.getNextState(added)==null){
-                            temp.addNextState(added,new NFANode());
+                        char added=(char)list.removeFirst();
+                        if(start.getNextState(added)==null){
+                            start.addNextState(added,new NFANode());
                         }
-                        temp=temp.getNextState(added);
+                        start=start.getNextState(added);
                     }
-                    //add according to the character after the same level )
-                    //find the location of corresponding )
-                    int l=level+1;
-                    for(int j=i+1;j<re.length();j++){
-                        if(re.charAt(j)=='('){
-                            l++;
-                        }else if(re.charAt(j)==')'){
-                            l--;
-                            if(l==level){
-                                //if re[j+1] is */+ add ¦Å node to last
+                    for(int j=i+1;j<re.length();j++) {
+                        char c1 = re.charAt(j);
+                        if (c1 == '|'){
+                            or = true;
+                        }else if(c1==')'){
+                            if(j<re.length()-1&&re.charAt(j+1)=='*'){
+                                if(start.getNextState('¦Å')==null){
+                                    start.addNextState('¦Å',new NFANode());
+                                }
+                                start=start.getNextState('¦Å');
+                                if(start.getNextState('¦Å')==null){
+                                    start.addNextState('¦Å',new NFANode());
+                                }
                             }
                         }
                     }
+                }else if(c==')'){
+                    while(!list.isEmpty()){
+                        char c1=(char)list.removeFirst();
+                        if(start.getNextState(c1)==null){
+                            start.addNextState(c1, new NFANode());
+                        }
+                        start=startState.getNextState(c1);
+                    }
+                    or=false;
+                }else if(c=='*'){
+                    if(re.charAt(i-1)==')'){
+                        start=start.getNextState('¦Å');
+                    }else{
+                        while(!list.isEmpty()){
+                            char c1=(char)list.removeFirst();
+                            if(!list.isEmpty()){
+                                if(start.getNextState(c1)==null){
+                                    start.addNextState(c1,new NFANode());
+                                }
+                                start=start.getNextState(c1);
+                            }else{
+                                if(start.getNextState('¦Å')!=null){
+                                    start.addNextState('¦Å',new NFANode());
+                                }
+                                start.addNextState(c1,start);
+                                if(start.getNextState('¦Å')==null){
+                                    start.addNextState('¦Å',new NFANode());
+                                }
+                                start=start.getNextState('¦Å');
+                            }
+                        }
+                    }
+                }else if(c=='|'){
+                    //
                 }
             }
         }
