@@ -20,7 +20,7 @@ public class NFA {
     private void addTerminalSymbol(String re){
         for(int i=0;i<re.length();i++){
             Character c=re.charAt(i);
-            if(isValid(c)){
+            if(isTerminalSymbol(c)){
                 if(!terminalSymbol.contains(c)){
                     terminalSymbol.add(c);
                 }
@@ -31,15 +31,36 @@ public class NFA {
     private void construct(String tokenName, String re){
         NFANode start=startState;
         LinkedList list=new LinkedList<Character>();
-        for(int i=0;i<re.length();i++){
-            char c=re.charAt(i);
+        process(list, start, tokenName, re, true);
+    }
+    //process ()
+    private void process(LinkedList list, NFANode start, String tokenName, String pre, boolean last){
+        NFANode tmp=start;
+        for(int i=0;i<pre.length();i++){
+            char c=pre.charAt(i);
             if(terminalSymbol.contains(c)){
                 list.add(c);
             }else{
                 if(c=='*'){
-                    if(terminalSymbol.contains(re.charAt(i-1))) {
+                    if(terminalSymbol.contains(pre.charAt(i-1))) {
+                        //add
                         while (!list.isEmpty()) {
                             char added = (char) list.removeFirst();
+                            if(list.isEmpty()){
+                                if(start.getNextState('¦Å')==null){
+                                    start.addNextState('¦Å',new NFANode());
+                                }
+                                start=start.getNextState('¦Å');
+                                if(start.getNextState(added)==null){
+                                    start.addNextState(added,new NFANode());
+                                }
+                                start=start.getNextState(added);
+                                if(start.getNextState('¦Å')==null){
+                                    start.addNextState('¦Å',new NFANode());
+                                }
+                                start=start.getNextState('¦Å');
+                                break;
+                            }
                             if (start.getNextState(added) == null) {
                                 start.addNextState(added, new NFANode());
                             }
@@ -55,57 +76,54 @@ public class NFA {
                         start=start.getNextState(c1);
                     }
                     int level=1;
-                    for(int j=i+1;j<re.length();j++){
-                        char c1=re.charAt(j);
-                        if(c1=='('){
-                            level++;
-                        }else if(c1==')'){
-                            level--;
-                        }
+                    for(int j=i+1;j<pre.length();j++){
+                        if(pre.charAt(j)=='(') level ++;
+                        else if(pre.charAt(j)==')') level--;
                         if(level==0){
-                            if(re.charAt(j+1)=='*') j++;
-                            boolean last=true;
-                            for(int k=j+1;j<re.length();j++){
-                                if(terminalSymbol.contains(re.charAt(j))){
-                                    last=false;
+                            boolean l=true;
+                            if(j<pre.length()-1){
+                                if(pre.charAt(j+1)=='*'){
+                                    j++;
+                                    if(start.getNextState('¦Å')==null){
+                                        start.addNextState('¦Å',new NFANode());
+                                    }
+                                    start=start.getNextState('¦Å');
+                                }
+                            }
+                            for(int k=j+1;k<pre.length();k++){
+                                if(terminalSymbol.contains(pre.charAt(k))){
+                                    l=false;
                                     break;
                                 }
                             }
-                            process(list,start,re.substring(i,j),last);
+                            process(list,start,tokenName,pre.substring(i,j),l&&last);
                             i=j;
-                            break;
+                            continue;
                         }
                     }
-                }else if(re.charAt(i)=='|'){
+                }else if(pre.charAt(i)=='|'){
                     while(!list.isEmpty()){
                         char c1=(char)list.removeFirst();
                         if(start.getNextState(c1)==null){
                             start.addNextState(c1,new NFANode());
                         }
-                        start=startState.getNextState(c1);
+                        start=start.getNextState(c1);
                     }
-                    start.setTokenName(tokenName);
-                    start=startState;
+                    if(last){
+                        start.setTokenName(tokenName);
+                    }
+                    start=tmp;
                 }
             }
-            start.setTokenName(tokenName);
         }
-    }
-    private void process(LinkedList list, NFANode start, String pre, boolean last){
-        NFANode tmp=start;
-        if(pre.charAt(pre.length()-1)=='*'){
-            if(start.getNextState('¦Å')==null){
-                start.addNextState('¦Å',new NFANode());
+        while(!list.isEmpty()){
+            char c=(char)list.removeFirst();
+            if(start.getNextState(c)==null){
+                start.addNextState(c,new NFANode());
             }
-            start=start.getNextState('¦Å');
-            if(start.getNextState('¦Å')==null){
-                start.addNextState('¦Å',new NFANode());
-            }
+            start=start.getNextState(c);
         }
-        for(int i=0;i<pre.length();i++){
-            char c=pre.charAt(i);
-            //
-        }
+        if(last) start.setTokenName(tokenName);
     }
     //if the character is terminal symbol
     public static boolean isValid(Character c){
@@ -117,9 +135,32 @@ public class NFA {
             return true;
         }else if(i<=(int)'Z'&&i>=(int)'A'){
             return true;
+        }else if(c=='|'||c=='*'||c=='('||c==')'){
+            return true;
         }else{
             return false;
         }
+    }
+    public static boolean isTerminalSymbol(Character c){
+        int i=(int) c;
+        //System.out.print(i+" ");
+        if(i<=(int)'9'&&i>=(int)'0'){
+            return true;
+        }else if(i<=(int)'z'&&i>=(int)'a'){
+            return true;
+        }else if(i<=(int)'Z'&&i>=(int)'A'){
+            return true;
+        }else{
+            return false;
+        }
+    }
+    public String toString(){
+        String s=new String();
+        Iterator itr=startState.getNextStates().entrySet().iterator();
+        while(itr.hasNext()){
+            s+=itr.next()+" ";
+        }
+        return terminalSymbol+" "+s;
     }
     //test functions
     public static void testSet1(){
@@ -169,6 +210,12 @@ public class NFA {
         n1=n1.getNextState('a');
         System.out.println(n1+" "+n2);
     }
+    private static void test(){
+        NFA nfa=new NFA();
+        nfa.addToken(new Token("1","abc|a*|b"));
+        System.out.println(nfa);
+        nfa.addToken(new Token("1","c(a|b)a"));
+    }
     public static void main(String[] args) {
         //System.out.println("hello world!");
         //NFANode.test();
@@ -176,7 +223,8 @@ public class NFA {
         //testIsValid();
         //testAddTerminalSymbol();
         //testList();
-        testRef();
+        //testRef();
+        test();
     }
 }
 
@@ -204,11 +252,12 @@ class NFANode{
         return nextStates.get(pathCh);
     }
     public String toString(){
-        return nextStates.toString();
+        return tokenName==null? nextStates.toString(): tokenName+" "+nextStates;
     }
     //test functions
     public static void test(){
         NFANode n=new NFANode();
+        System.out.println(n);
         n.addNextState('a',new NFANode());
         System.out.println(n.getNextStates());
         System.out.println(n.getNextState('a')+" "+n.getNextState('b'));
