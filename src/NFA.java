@@ -29,13 +29,13 @@ public class NFA {
     }
     //construct NFA
     private void construct(String tokenName, String re){
-        NFANode start=startState;
+        LinkedList start=new LinkedList<NFANode>();
+        start.add(startState);
         LinkedList list=new LinkedList<Character>();
         process(list, start, tokenName, re, true);
     }
-    //process ()
-    private void process(LinkedList list, NFANode start, String tokenName, String pre, boolean last){
-        NFANode tmp=start;
+    //process ()   ¦Å
+    private void process(LinkedList list, LinkedList start, String tokenName, String pre, boolean last){
         for(int i=0;i<pre.length();i++){
             char c=pre.charAt(i);
             if(terminalSymbol.contains(c)){
@@ -43,38 +43,22 @@ public class NFA {
             }else{
                 if(c=='*'){
                     if(terminalSymbol.contains(pre.charAt(i-1))) {
-                        //add
+                        //add nodes in list
                         while (!list.isEmpty()) {
+                            //add until the *ed one
                             char added = (char) list.removeFirst();
                             if(list.isEmpty()){
-                                if(start.getNextState('¦Å')==null){
-                                    start.addNextState('¦Å',new NFANode());
-                                }
-                                start=start.getNextState('¦Å');
-                                if(start.getNextState(added)==null){
-                                    start.addNextState(added,new NFANode());
-                                }
-                                start=start.getNextState(added);
-                                if(start.getNextState('¦Å')==null){
-                                    start.addNextState('¦Å',new NFANode());
-                                }
-                                start=start.getNextState('¦Å');
+                                //add *ed one and ¦Å nodes
                                 break;
                             }
-                            if (start.getNextState(added) == null) {
-                                start.addNextState(added, new NFANode());
-                            }
-                            start = start.getNextState(added);
+                            //add node
                         }
                     }
                 }else if(c=='('){
                     while(!list.isEmpty()){
-                        char c1=(char)list.removeFirst();
-                        if(start.getNextState(c1)==null){
-                            start.addNextState(c1,new NFANode());
-                        }
-                        start=start.getNextState(c1);
+                        //add all nodes in list
                     }
+                    //find the content in the same level
                     int level=1;
                     for(int j=i+1;j<pre.length();j++){
                         if(pre.charAt(j)=='(') level ++;
@@ -84,10 +68,7 @@ public class NFA {
                             if(j<pre.length()-1){
                                 if(pre.charAt(j+1)=='*'){
                                     j++;
-                                    if(start.getNextState('¦Å')==null){
-                                        start.addNextState('¦Å',new NFANode());
-                                    }
-                                    start=start.getNextState('¦Å');
+                                    //add ¦Å node or nodes?
                                 }
                             }
                             for(int k=j+1;k<pre.length();k++){
@@ -102,28 +83,22 @@ public class NFA {
                         }
                     }
                 }else if(pre.charAt(i)=='|'){
+                    //add all nodes int list
                     while(!list.isEmpty()){
-                        char c1=(char)list.removeFirst();
-                        if(start.getNextState(c1)==null){
-                            start.addNextState(c1,new NFANode());
-                        }
-                        start=start.getNextState(c1);
+                        //
                     }
                     if(last){
-                        start.setTokenName(tokenName);
+                        //add tokenName
                     }
-                    start=tmp;
+                    //reset startNode
+                }else if(pre.charAt(i)==')'){
+                    //the last or second last character of pre
+                    //if i==pre.length()-1
+                    //if the last is *
+                    //if there is |
                 }
             }
         }
-        while(!list.isEmpty()){
-            char c=(char)list.removeFirst();
-            if(start.getNextState(c)==null){
-                start.addNextState(c,new NFANode());
-            }
-            start=start.getNextState(c);
-        }
-        if(last) start.setTokenName(tokenName);
     }
     //if the character is terminal symbol
     public static boolean isValid(Character c){
@@ -212,7 +187,7 @@ public class NFA {
     }
     private static void test(){
         NFA nfa=new NFA();
-        nfa.addToken(new Token("1","int|char|string|float|double"));
+        nfa.addToken(new Token("1","a(b|c)|a*"));
         System.out.println(nfa);
     }
     public static void main(String[] args) {
@@ -243,8 +218,13 @@ class NFANode{
         this.tokenName = tokenName;
     }
     public String getTokenName(){return tokenName;}
-    public void addNextState(Character c,NFANode nfaNode){
+    public void putNextState(Character c,NFANode nfaNode){
         nextStates.put(c,nfaNode);
+    }
+    public void addNextState(Character c, NFANode nfaNode){
+        if(nextStates.get(c)==null){
+            this.putNextState(c,nfaNode);
+        }
     }
     public HashMap getNextStates(){return nextStates;}
     public NFANode getNextState(char pathCh){
