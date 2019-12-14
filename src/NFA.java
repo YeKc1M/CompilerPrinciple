@@ -212,9 +212,8 @@ public class NFA {
     }
     private static void test(){
         NFA nfa=new NFA();
-        nfa.addToken(new Token("1","abc|a*|b"));
+        nfa.addToken(new Token("1","int|char|string|float|double"));
         System.out.println(nfa);
-        nfa.addToken(new Token("1","c(a|b)a"));
     }
     public static void main(String[] args) {
         //System.out.println("hello world!");
