@@ -162,6 +162,9 @@ public class NFA {
         }
         return terminalSymbol+" "+s;
     }
+    public Set getTerminalSymbol(){
+        return  terminalSymbol;
+    }
     //test functions
     public static void testSet1(){
         Set s=new HashSet();
@@ -224,6 +227,7 @@ public class NFA {
         //testList();
         //testRef();
         test();
+        //NFANode.testEqual();
     }
 }
 
@@ -260,5 +264,13 @@ class NFANode{
         n.addNextState('a',new NFANode());
         System.out.println(n.getNextStates());
         System.out.println(n.getNextState('a')+" "+n.getNextState('b'));
+    }
+    public static void testEqual(){
+        NFANode n1=new NFANode(),n2=new NFANode(),n3=new NFANode();
+        n1.addNextState('a',n3);n2.addNextState('b',n3);
+        System.out.println(n1.getNextState('a').equals(n2.getNextState('b')));
+        Set s1=new HashSet(),s2=new HashSet();
+        s1.add(n1);s1.add(n2);s2.add(n1);s2.add(n2);
+        System.out.println(s1.equals(s2));
     }
 }
