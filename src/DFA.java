@@ -1,3 +1,4 @@
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -5,6 +6,7 @@ import java.util.Set;
 public class DFA {
     private Set states;
     private Set terminalSymbol;//¦Å
+    private DFANode startState;
     private DFA(){}
     public DFA(NFA nfa){
         states=new HashSet<DFANode>();
@@ -19,13 +21,16 @@ public class DFA {
             nfaNode=nfaNode.getNextState('¦Å');
         }while(nfaNode!=null);
         addedStates.add(dfaNode);
-        //
+        startState=dfaNode;
         while(!addedStates.isEmpty()){
             Object[] elements= addedStates.toArray();//used to find next DFANode, if not in states, add
             for(int i=0;i<elements.length;i++){
-                addedStates.remove(elements[i]);
-                if(!hasDFANode((DFANode) elements[i])){
-                    states.add(elements[i]);
+                DFANode thisNode= (DFANode) elements[i];
+                addedStates.remove(thisNode);
+                if(getDFANode(thisNode)==null){
+                    states.add(thisNode);
+                }else{
+                    thisNode=getDFANode(thisNode);
                 }
                 //find next DFANodes
                 Iterator terminalSymbolItr=terminalSymbol.iterator();
@@ -33,9 +38,11 @@ public class DFA {
                     char path= (char) terminalSymbolItr.next();
                     DFANode newDFANode=new DFANode();
                     Iterator itr=((DFANode)elements[i]).getNfaNodes().iterator();
+                    boolean flag=false;//
                     while(itr.hasNext()){
                         NFANode itrNext= (NFANode) itr.next();
                         if(itrNext.getNextState(path)!=null){
+                            flag=true;
                             itrNext=itrNext.getNextState(path);
                             do{
                                 newDFANode.addNFANode(itrNext);
@@ -43,11 +50,48 @@ public class DFA {
                             }while(itrNext!=null);
                         }
                     }
-                    addedStates.add(newDFANode);
+                    if(flag) {
+                        if (getDFANode(newDFANode) == null) {
+                            addedStates.add(newDFANode);
+                        } else {
+                            newDFANode = getDFANode(newDFANode);
+                        }
+                        thisNode.setNextState(path, newDFANode);
+                    }
                 }
             }
         }
     }
+
+    public String match(String re){
+        String s=null;
+        DFANode dfaNode=startState;
+        try{
+            for(int i=0;i<re.length();i++){
+                if(dfaNode.getNextState(re.charAt(i))==null){
+                    throw new Exception("cannot recognize symbol");
+                }else{
+                    dfaNode=dfaNode.getNextState(re.charAt(i));
+                }
+            }
+            s=dfaNode.getTokenName();
+            if(s==null){
+                throw new Exception("cannot recognize symbol");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return s;
+    }
+    public String getTokens(String seq){
+        String s=new String();
+        String[] arr=seq.split(" ");
+        for(int i=0;i<arr.length;i++){
+            s+=match(arr[i])+" ";
+        }
+        return s;
+    }
+
     public String toString(){
         String s=new String();
         Iterator iterator=states.iterator();
@@ -57,28 +101,45 @@ public class DFA {
         }
         return s;
     }
-    private boolean hasDFANode(DFANode dfaNode){
-        boolean flag=false;
+    private DFANode getDFANode(DFANode dfaNode){
+        DFANode node=null;
         Iterator iterator=states.iterator();
-        while (iterator.hasNext()){
-            DFANode inStates= (DFANode) iterator.next();
-            if(inStates.equal(dfaNode)){
-                flag=true;
-                break;
+        while(iterator.hasNext()){
+            DFANode nextNode= (DFANode) iterator.next();
+            if(nextNode.equal(dfaNode)){
+                node=nextNode;
             }
         }
-        return flag;
+        return node;
     }
     public static void main(String[] args){
-        test1();
+        //test1();
         //testSet();
         //testSetContain();
+        //testMatch();
+        test();
+    }
+    private static void test(){
+        NFA nfa=new NFA();
+        nfa.addToken(new Token("token1","int|char|float"));
+        nfa.addToken(new Token("id","abc|cba"));
+        DFA dfa=new DFA(nfa);
+        System.out.println(dfa.getTokens("int abc cba char"));
     }
     private static void test1(){
         NFA nfa=new NFA();
-        nfa.addToken(new Token("1","int|float|char"));
+        nfa.addToken(new Token("1","int|inta|intb"));
         DFA dfa=new DFA(nfa);
-        System.out.println(dfa);
+        System.out.println(dfa.startState);
+        System.out.println(dfa.startState.getNextState('i'));
+    }
+    private static void testMatch(){
+        NFA nfa=new NFA();
+        nfa.addToken(new Token("1","int|inta|intb"));
+        DFA dfa=new DFA(nfa);
+        System.out.println(dfa.match("inta"));
+        System.out.println(dfa.match("int"));
+        System.out.println(dfa.match("intc"));
     }
     private static void testSet(){
         Set set=new HashSet();
@@ -103,8 +164,10 @@ public class DFA {
 class DFANode{
     private String tokenName=null;
     private Set nfaNodes;
+    private HashMap nextStates;
     public DFANode(){
         nfaNodes=new HashSet<NFANode>();
+        nextStates=new HashMap<Character,DFANode>();
     }
     public boolean equal(DFANode dfaNode){
         return nfaNodes.equals(dfaNode.nfaNodes);
@@ -123,10 +186,25 @@ class DFANode{
         }
         nfaNodes.add(nfaNode);
     }
+    public void setNextState(char path,DFANode dfaNode){
+        nextStates.put(path,dfaNode);
+    }
+    public DFANode getNextState(char path){
+        DFANode dfaNode=null;
+        dfaNode= (DFANode) nextStates.get(path);
+        return dfaNode;
+    }
     public Set getNfaNodes(){
         return nfaNodes;
     }
+    public String getTokenName(){
+        return tokenName;
+    }
     public String toString(){
-        return tokenName+":"+nfaNodes.toString();
+        if(tokenName==null){
+            return nextStates.toString();
+        }else{
+            return tokenName+":"+nextStates;
+        }
     }
 }
