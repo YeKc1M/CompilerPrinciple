@@ -165,6 +165,9 @@ public class NFA {
     public Set getTerminalSymbol(){
         return  terminalSymbol;
     }
+    public NFANode getStartState(){
+        return startState;
+    }
     //test functions
     public static void testSet1(){
         Set s=new HashSet();
@@ -227,7 +230,7 @@ public class NFA {
         //testList();
         //testRef();
         test();
-        //NFANode.testEqual();
+        NFANode.testEqual();
     }
 }
 
