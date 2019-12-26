@@ -28,20 +28,70 @@ public class Table {
         startNode.setNo(0);
         RENode startRENode=new RENode(0);
         startRENode.addEndSymbol("$");
-        startNode.addWaitingElement(startRENode);
+        startNode.addWaitingElement(startRENode,this);
+        statuses.add(startRENode);
+        //construct from startNode
+        construct(startNode);
         //prior=new HashMap();
+    }
+    private void construct(Node node){
+        Iterator iterator=node.waitingElements.iterator();
+        while (iterator.hasNext()){
+            //add node according to waitingSymbol
+            RENode itrNode= (RENode) iterator.next();
+            int waitingIndex=itrNode.getWaitingIndex();
+            int reNo=itrNode.getNo();
+            String waitingSymbol=res[reNo].getRight()[waitingIndex];
+            //generate new status, if not in statuses, push into statuses
+            //set node's row
+            int rowIndex=getSymbolIndex(waitingSymbol);
+            if(rowIndex<terminalSymbols.length){
+                //
+            }
+        }
+    }
+    public boolean isTerminal(String s){
+        for(int i=0;i<terminalSymbols.length;i++){
+            if(terminalSymbols[i].equals(s)){
+                return true;
+            }
+        }
+        return false;
+    }
+    protected int getSymbolIndex(String symbol){
+        for(int i=0;i<terminalSymbols.length;i++){
+            if(terminalSymbols[i].equals(symbol)){
+                return i;
+            }
+        }
+        for(int i=0;i<nonTerminalSymbols.length;i++){
+            if(nonTerminalSymbols[i].equals(symbol)){
+                return terminalSymbols.length+i;
+            }
+        }
+        try {
+            throw new Exception("no such symbol");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
     public static void main(String[] args){
         //Node.testStrArr();
         //Node.testEquals();
+        test();
     }
     private static void test(){
-        //
+        Table table;
+        String[] terminal={"S","T","F"};
+        String[] nonTerminal={"id","+"};
+        RE[] res={new RE("S->T + F"), new RE("T->F + id"), new RE("F->id")};
+        table=new Table(terminal,nonTerminal,res);
     }
 }
 
 class Node{
-    private LinkedList waitingElements;//LinkedList<RENode>
+    protected LinkedList waitingElements;//LinkedList<RENode>
     private int no=0;
     private String[] row;//corresponding terminalSymbols and nonTerminalSymbols,show shift or reduction
     public Node(int column){
@@ -74,14 +124,25 @@ class Node{
         }
         return true;
     }
-    protected void addWaitingElement(RENode reNode){
+    protected void addWaitingElement(RENode reNode, Table table){
         if(!hasRENode(reNode)){
             waitingElements.add(reNode);
-            //recursive add continue
+            String waiting=table.res[reNode.getNo()].getRight()[reNode.getWaitingIndex()];
+            if(table.isTerminal(waiting)){
+                for(int i=0;i<table.res.length;i++){
+                    if(table.res[i].getLeft().equals(waiting)){
+                        RENode addedRENode=new RENode(i);
+                        addWaitingElement(addedRENode,table);
+                    }
+                }
+            }
         }
     }
     public void setNo(int no){
         this.no=no;
+    }
+    protected void setRow(int i, String s){
+        row[i]+=(s+" ");
     }
 
     //test functions
