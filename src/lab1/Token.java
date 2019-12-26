@@ -1,3 +1,5 @@
+package lab1;
+
 public class Token {
     private String tokenName;
     private String RE;
@@ -42,3 +44,4 @@ public class Token {
         testToken();
     }
 }
+

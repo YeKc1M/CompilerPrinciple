@@ -1,3 +1,5 @@
+package lab1;
+
 import java.util.*;
 
 public class NFA {
@@ -236,7 +238,7 @@ public class NFA {
 
 class NFANode{
     private String tokenName=null;
-    private HashMap<Character,NFANode> nextStates;
+    private HashMap<Character, NFANode> nextStates;
     public NFANode(){
         nextStates=new HashMap<>();
     }
@@ -250,7 +252,7 @@ class NFANode{
         this.tokenName = tokenName;
     }
     public String getTokenName(){return tokenName;}
-    public void addNextState(Character c,NFANode nfaNode){
+    public void addNextState(Character c, NFANode nfaNode){
         nextStates.put(c,nfaNode);
     }
     public HashMap getNextStates(){return nextStates;}

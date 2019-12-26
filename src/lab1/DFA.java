@@ -1,3 +1,5 @@
+package lab1;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -167,7 +169,7 @@ class DFANode{
     private HashMap nextStates;
     public DFANode(){
         nfaNodes=new HashSet<NFANode>();
-        nextStates=new HashMap<Character,DFANode>();
+        nextStates=new HashMap<Character, DFANode>();
     }
     public boolean equal(DFANode dfaNode){
         return nfaNodes.equals(dfaNode.nfaNodes);
@@ -186,7 +188,7 @@ class DFANode{
         }
         nfaNodes.add(nfaNode);
     }
-    public void setNextState(char path,DFANode dfaNode){
+    public void setNextState(char path, DFANode dfaNode){
         nextStates.put(path,dfaNode);
     }
     public DFANode getNextState(char path){
@@ -208,3 +210,4 @@ class DFANode{
         }
     }
 }
+
