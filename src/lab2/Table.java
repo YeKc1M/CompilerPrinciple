@@ -33,21 +33,58 @@ public class Table {
         //construct from startNode
         construct(startNode);
         //prior=new HashMap();
+        System.out.print("hello world!");
     }
     private void construct(Node node){
-        Iterator iterator=node.waitingElements.iterator();
-        while (iterator.hasNext()){
-            //add node according to waitingSymbol
-            RENode itrNode= (RENode) iterator.next();
+        HashMap waitingGroup=new HashMap();//LinkedList<String,Set<RENode>> grouped by waiting symbol
+        Iterator waitingElementsItr=node.waitingElements.iterator();
+        while (waitingElementsItr.hasNext()){
+            RENode itrNode = (RENode) waitingElementsItr.next();
             int waitingIndex=itrNode.getWaitingIndex();
             int reNo=itrNode.getNo();
-            String waitingSymbol=res[reNo].getRight()[waitingIndex];
+            if(waitingIndex<res[reNo].getRight().length){
+                String waitingSymbol=res[reNo].getRight()[waitingIndex];
+                Set set= (Set) waitingGroup.get(waitingSymbol);
+                if(set==null){
+                    set=new HashSet();
+                }
+                waitingGroup.put(waitingSymbol,set.add(itrNode));
+            }else{
+                Set endSymbols=itrNode.endSymbol;
+                Iterator endSymbolsItr=endSymbols.iterator();
+                while (endSymbolsItr.hasNext()){
+                    String endSymbol= (String) endSymbolsItr.next();
+                    int rowIndex=getSymbolIndex(endSymbol);
+                    node.setRow(rowIndex,"r"+reNo);
+                }
+            }
+        }
+        Iterator iterator=waitingGroup.entrySet().iterator();
+        while (iterator.hasNext()){
+            //add node according to waitingSymbol
+            Map.Entry entry= (Map.Entry) iterator.next();
+            Set reNodes= (Set) entry.getValue();
+            String waitingSymbol= (String) entry.getKey();
             //generate new status, if not in statuses, push into statuses
-            //
+            Node newStatus=new Node(terminalSymbols.length + nonTerminalSymbols.length);
+            Iterator reNodesItr=reNodes.iterator();
+            while (reNodesItr.hasNext()){
+                RENode reNode= (RENode) reNodesItr.next();
+                RENode newRENode=new RENode(reNode.getNo());
+                newRENode.setWaitingIndex(reNode.getWaitingIndex()+1);
+                newStatus.addWaitingElement(newRENode,this);
+            }
+            int nodeNo=getStatus(newStatus);
+            if(nodeNo==statuses.toArray().length){
+                newStatus.setNo(nodeNo);
+                statuses.add(newStatus);
+            }
             //set node's row
             int rowIndex=getSymbolIndex(waitingSymbol);
             if(rowIndex<terminalSymbols.length){
-                //
+                node.setRow(rowIndex,"s"+nodeNo);
+            }else{
+                node.setRow(rowIndex,nodeNo+"");
             }
         }
     }
@@ -56,11 +93,36 @@ public class Table {
         if(parentNode.getWaitingIndex() == res[parentNode.getNo()].getRight().length - 1){
             collection.addAll(parentNode.endSymbol);
         }else{
-            String firstSymbol = res[parentNode.getNo()].getRight()[parentNode.getWaitingIndex() + 1];
-            if(isTerminal(firstSymbol)){
-                collection.add(firstSymbol);
+            String nextSymbol = res[parentNode.getNo()].getRight()[parentNode.getWaitingIndex() + 1];
+            if(isTerminal(nextSymbol)){
+                collection.add(nextSymbol);
             }else{
-                compute first of the following non-terminal symbol
+                //compute first of the following non-terminal symbol
+                collection.addAll(computeFirst(nextSymbol));
+            }
+        }
+        return collection;
+    }
+    private int getStatus(Node node){
+        Iterator iterator=statuses.iterator();
+        while (iterator.hasNext()){
+            Node n= (Node) iterator.next();
+            if(n.equals(node)){
+                return n.getNo();
+            }
+        }
+        return statuses.toArray().length;
+    }
+    private Collection computeFirst(String s){
+        Collection collection=new HashSet();
+        for(int i=0;i<res.length;i++){
+            if(res[i].getLeft().equals(s)){
+                String firstSymbol=res[i].getRight()[0];
+                if(isTerminal(firstSymbol)){
+                    collection.add(firstSymbol);
+                }else{
+                    collection.addAll(computeFirst(firstSymbol));
+                }
             }
         }
         return collection;
@@ -106,9 +168,9 @@ public class Table {
     }
     private static void test(){
         Table table;
-        String[] terminal={"S","T","F"};
-        String[] nonTerminal={"id","+"};
-        RE[] res={new RE("S->T + F"), new RE("T->F + id"), new RE("F->id")};
+        String[] terminal={"c","d"};
+        String[] nonTerminal={"S","C"};
+        RE[] res={new RE("S->C C"), new RE("C->c C"), new RE("C->d")};
         table=new Table(terminal,nonTerminal,res);
     }
 }
@@ -150,9 +212,9 @@ class Node{
     protected void addWaitingElement(RENode reNode, Table table){
         if(!hasRENode(reNode)) {
             waitingElements.add(reNode);
-            if (reNode.getWaitingIndex() < table.res[reNode.getNo()].getRight().length - 1){
+            if(reNode.getWaitingIndex()<table.res[reNode.getNo()].getRight().length){
                 String waiting = table.res[reNode.getNo()].getRight()[reNode.getWaitingIndex()];
-                if (table.isTerminal(waiting)) {
+                if (table.isNonTerminal(waiting)) {
                     for (int i = 0; i < table.res.length; i++) {
                         if (table.res[i].getLeft().equals(waiting)) {
                             RENode addedRENode = new RENode(i);
@@ -167,6 +229,9 @@ class Node{
     }
     public void setNo(int no){
         this.no=no;
+    }
+    public int getNo(){
+        return no;
     }
     protected void setRow(int i, String s){
         row[i]+=(s+" ");
