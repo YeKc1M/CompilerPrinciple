@@ -43,6 +43,7 @@ public class Table {
             int reNo=itrNode.getNo();
             String waitingSymbol=res[reNo].getRight()[waitingIndex];
             //generate new status, if not in statuses, push into statuses
+            //
             //set node's row
             int rowIndex=getSymbolIndex(waitingSymbol);
             if(rowIndex<terminalSymbols.length){
@@ -50,9 +51,31 @@ public class Table {
             }
         }
     }
+    protected Collection computeEndSymbol(RENode addedNode, RENode parentNode) {
+        Collection collection=new HashSet();
+        if(parentNode.getWaitingIndex() == res[parentNode.getNo()].getRight().length - 1){
+            collection.addAll(parentNode.endSymbol);
+        }else{
+            String firstSymbol = res[parentNode.getNo()].getRight()[parentNode.getWaitingIndex() + 1];
+            if(isTerminal(firstSymbol)){
+                collection.add(firstSymbol);
+            }else{
+                compute first of the following non-terminal symbol
+            }
+        }
+        return collection;
+    }
     public boolean isTerminal(String s){
         for(int i=0;i<terminalSymbols.length;i++){
             if(terminalSymbols[i].equals(s)){
+                return true;
+            }
+        }
+        return false;
+    }
+    public boolean isNonTerminal(String s){
+        for(int i=0;i<nonTerminalSymbols.length;i++){
+            if(nonTerminalSymbols[i].equals(s)){
                 return true;
             }
         }
@@ -125,14 +148,18 @@ class Node{
         return true;
     }
     protected void addWaitingElement(RENode reNode, Table table){
-        if(!hasRENode(reNode)){
+        if(!hasRENode(reNode)) {
             waitingElements.add(reNode);
-            String waiting=table.res[reNode.getNo()].getRight()[reNode.getWaitingIndex()];
-            if(table.isTerminal(waiting)){
-                for(int i=0;i<table.res.length;i++){
-                    if(table.res[i].getLeft().equals(waiting)){
-                        RENode addedRENode=new RENode(i);
-                        addWaitingElement(addedRENode,table);
+            if (reNode.getWaitingIndex() < table.res[reNode.getNo()].getRight().length - 1){
+                String waiting = table.res[reNode.getNo()].getRight()[reNode.getWaitingIndex()];
+                if (table.isTerminal(waiting)) {
+                    for (int i = 0; i < table.res.length; i++) {
+                        if (table.res[i].getLeft().equals(waiting)) {
+                            RENode addedRENode = new RENode(i);
+                            Collection endSymCollection = table.computeEndSymbol(addedRENode, reNode);
+                            addedRENode.endSymbol.addAll(endSymCollection);
+                            addWaitingElement(addedRENode, table);
+                        }
                     }
                 }
             }
