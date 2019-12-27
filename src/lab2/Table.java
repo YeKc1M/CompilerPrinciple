@@ -36,6 +36,7 @@ public class Table {
         System.out.print("hello world!");
     }
     private void construct(Node node){
+        /*
         HashMap waitingGroup=new HashMap();//LinkedList<String,Set<RENode>> grouped by waiting symbol
         Iterator waitingElementsItr=node.waitingElements.iterator();
         while (waitingElementsItr.hasNext()){
@@ -58,7 +59,68 @@ public class Table {
                     node.setRow(rowIndex,"r"+reNo);
                 }
             }
+        }*/
+        for(int i=0;i<terminalSymbols.length;i++){
+            Iterator iterator=node.waitingElements.iterator();
+            //construct new status
+            Node newNode=new Node(terminalSymbols.length+nonTerminalSymbols.length);
+            while (iterator.hasNext()){
+                RENode reNode= (RENode) iterator.next();
+                int reNo=reNode.getNo();int waitingIndex=reNode.getWaitingIndex();
+                if(waitingIndex==res[reNo].getRight().length){
+                    continue;
+                }else{
+                    String waitingSymbol=res[reNo].getRight()[waitingIndex];
+                    if(waitingSymbol.equals(terminalSymbols[i])){
+                        RENode newRENode=new RENode(reNo);
+                        newRENode.setWaitingIndex(waitingIndex+1);
+                        newNode.addWaitingElement(newRENode,this);
+                    }
+                }
+            }
+            //add if not in statuses
+            if(!newNode.equals(new Node(terminalSymbols.length+nonTerminalSymbols.length))){
+                int nodeNo=getStatus(newNode);
+                if(nodeNo==statuses.toArray().length){
+                    //add newNode
+                    newNode.setNo(nodeNo);
+                    statuses.add(newNode);
+                }
+                node.setRow(i,"s"+nodeNo);
+            }
         }
+        for(int i=0;i<nonTerminalSymbols.length;i++){
+            Iterator iterator=node.waitingElements.iterator();
+            //construct new status
+            Node newNode=new Node(terminalSymbols.length+nonTerminalSymbols.length);
+            while (iterator.hasNext()){
+                RENode reNode= (RENode) iterator.next();
+                int reNo=reNode.getNo();int waitingIndex=reNode.getWaitingIndex();
+                if(waitingIndex==res[reNo].getRight().length){
+                    //
+                    continue;
+                }else{
+                    String waitingSymbol=res[reNo].getRight()[waitingIndex];
+                    if(waitingSymbol.equals(terminalSymbols[i])){
+                        RENode newRENode=new RENode(reNo);
+                        newRENode.setWaitingIndex(waitingIndex+1);
+                        newRENode.endSymbol=reNode.endSymbol;
+                        newNode.addWaitingElement(newRENode,this);
+                    }
+                }
+            }
+            //add if not in statuses
+            if(!newNode.equals(new Node(terminalSymbols.length+nonTerminalSymbols.length))){
+                int nodeNo=getStatus(newNode);
+                if(nodeNo==statuses.toArray().length){
+                    //add newNode
+                    newNode.setNo(nodeNo);
+                    statuses.add(newNode);
+                }
+                node.setRow(i,""+nodeNo);
+            }
+        }
+        /*
         Iterator iterator=waitingGroup.entrySet().iterator();
         while (iterator.hasNext()){
             //add node according to waitingSymbol
@@ -86,7 +148,7 @@ public class Table {
             }else{
                 node.setRow(rowIndex,nodeNo+"");
             }
-        }
+        }*/
     }
     protected Collection computeEndSymbol(RENode addedNode, RENode parentNode) {
         Collection collection=new HashSet();
@@ -196,7 +258,7 @@ class Node{
         return b;
     }
     public boolean equals(Node node){
-        if(row.length!=node.row.length){
+        if(row.length!=node.row.length||waitingElements.toArray().length!=node.waitingElements.toArray().length){
             return false;
         }
         Iterator iterator=node.waitingElements.iterator();
